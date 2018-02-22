@@ -12,6 +12,8 @@ pygame.init()
 display_width = 800
 display_height = 600
 
+inputArray = [" "," "," ", " "]
+
 #Colors:
 black = (0,0,0)
 white = (255,255,255)
@@ -52,21 +54,65 @@ def button(msg,x,y,w,h,ic,ac, action=None):
     textRect.center = ((x+(w/2)), (y+(h/2)))
     display.blit(textSurf, textRect)
 
+def draw_border(x,y,w,h,c,t):
+    pygame.draw.rect(display, c, (x-t, y-t, w+(t*2), h+(t*2)))
+
+def input_state():
+    output = ""
+    for x in range(0, len(inputArray)):
+        if inputArray[x] == " ":
+            output += '- '
+        else:
+            output += '* '
+    output.strip()
+    return output
+
 def inlog_scherm():
+    ingelogd = False
+    pointer = 0
+    while not ingelogd:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_KP0 or event.key == pygame.K_0:
+                    inputArray[pointer] = "0"
+                    pointer += 1
+                    
+        display.fill(green_kiwi)
+        TextSurf, TextRect = text_objects("Kiwi Banking", largeText)
+        TextRect.center = ((display_width/2), (display_height/2-100))
+        display.blit(TextSurf, TextRect)
+
+        draw_border(150, 300, 500, 75, black, 2)
+        pygame.draw.rect(display, white, (150, 300, 500, 75))
+        TextSurf2, TextRect2 = text_objects(input_state(), largeText)
+        TextRect2.center = ((display_width/2), (display_height/2+40))
+        display.blit(TextSurf2, TextRect2)
+
+        button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
+
+        pygame.display.update()
+        clock.tick(15)
+        if pointer == 4:
+            tweede_scherm()
+
+def tweede_scherm():
     ingelogd = False
     while not ingelogd:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-        display.fill(green_kiwi)
-        TextSurf, TextRect = text_objects("Kiwi Banking", largeText)
+                    
+        display.fill(red)
+        TextSurf, TextRect = text_objects("Fuck You", largeText)
         TextRect.center = ((display_width/2), (display_height/2-100))
         display.blit(TextSurf, TextRect)
 
-        button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
-
         pygame.display.update()
         clock.tick(15)
+
 
 inlog_scherm()
