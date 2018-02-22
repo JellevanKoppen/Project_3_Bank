@@ -6,7 +6,9 @@ Description: Read input from arduino
 """
 import serial
 
-ser = serial.Serial('COM8',9600)
+comm = 'COM8'
+
+ser = serial.Serial(comm,9600)
 
 while True:
     message = ser.readline()
