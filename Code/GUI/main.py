@@ -77,8 +77,9 @@ def inlog_scherm():
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_KP0 or event.key == pygame.K_0:
-                    inputArray[pointer] = "0"
-                    pointer += 1
+                    if pointer < 4:
+                        inputArray[pointer] = "0"
+                        pointer += 1
                     
         display.fill(green_kiwi)
         TextSurf, TextRect = text_objects("Kiwi Banking", largeText)
@@ -95,24 +96,5 @@ def inlog_scherm():
 
         pygame.display.update()
         clock.tick(15)
-        if pointer == 4:
-            tweede_scherm()
-
-def tweede_scherm():
-    ingelogd = False
-    while not ingelogd:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-                    
-        display.fill(red)
-        TextSurf, TextRect = text_objects("Fuck You", largeText)
-        TextRect.center = ((display_width/2), (display_height/2-100))
-        display.blit(TextSurf, TextRect)
-
-        pygame.display.update()
-        clock.tick(15)
-
 
 inlog_scherm()
