@@ -10,7 +10,21 @@ comm = 'COM8'
 
 ser = serial.Serial(comm,9600)
 
+pointer = 0
+digitArray = []
+
 while True:
-    message = ser.readline()
-    message.strip()
-    print (message)
+    digit = ser.readline()
+    if(digit):
+        digit.strip()
+        if(digit == '#'):
+           arrayReset()
+        else:
+           digitArray[pointer] = str(digit)
+        print (message)
+
+
+def arrayReset():
+    for x in range(0, pointer):
+           digitArray[x] = ""
+    pointer = 0
