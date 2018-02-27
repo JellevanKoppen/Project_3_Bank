@@ -2,7 +2,13 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #define SDA 10
-#define RST 9
+#define RST A0
+
+/*
+TO DO:
+- Elke drie seconden checken voor RFID
+- Uitvinden of arduino 49 of 1 ontvangt!
+*/
 
 const byte ROWS = 4;
 const byte COLS = 4;
@@ -16,6 +22,8 @@ char keys[ROWS][COLS]{
 
 byte rowPins[ROWS] = {5, 4, 3, 2};
 byte colPins[COLS] = {9, 8, 7, 6};
+int incomingByte = 0;
+bool received = false;
 
 Keypad keypad = Keypad(makeKeymap(keys), colPins, rowPins, ROWS, COLS);
 
@@ -28,8 +36,18 @@ void setup() {
 }
 
 void loop() {
-  readKeypad();
-  readRFID();
+  if(Serial.available() > 0){
+    incomingByte = Serial.read();
+    received = true;
+    Serial.println("Arduino received: ");
+    Serial.println(incomingByte);
+  } 
+  if(received == false){
+    readRFID();
+  } 
+  if(received == true){
+    readKeypad();
+  }
 }
 
 void readKeypad(){
