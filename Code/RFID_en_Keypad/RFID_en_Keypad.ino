@@ -22,8 +22,9 @@ char keys[ROWS][COLS]{
 
 byte rowPins[ROWS] = {5, 4, 3, 2};
 byte colPins[COLS] = {9, 8, 7, 6};
-int incomingByte = 0;
+String incomingByte;
 bool received = false;
+bool reading = false;
 
 Keypad keypad = Keypad(makeKeymap(keys), colPins, rowPins, ROWS, COLS);
 
@@ -32,21 +33,52 @@ MFRC522 mfrc522(SDA,RST);
 void setup() {
   Serial.begin(9600);
   SPI.begin();
+  pinMode(A1, OUTPUT);
   mfrc522.PCD_Init();//Start de rfid reader
 }
 
 void loop() {
+  digitalWrite(A1, HIGH);
   if(Serial.available() > 0){
-    incomingByte = Serial.read();
+    incomingByte = Serial.readString();
     received = true;
     Serial.println("Arduino received: ");
     Serial.println(incomingByte);
+    if(incomingByte == "1"){
+      reading = false;
+      incomingByte = "";
+      receivedCard();
+    }
   } 
   if(received == false){
     readRFID();
-  } 
-  if(received == true){
-    readKeypad();
+  }
+}
+
+void receivedCard(){
+  digitalWrite(A1, LOW);
+  while(true){
+    if(!reading){
+      readKeypad();
+    }
+    if(Serial.available() > 0){
+    incomingByte = Serial.readString();
+    }
+    if(incomingByte == "1"){
+      reading = true;
+      readRFID();
+    }
+    if(incomingByte == "0"){
+      Serial.println("Nul ontvangen! Terug naar loop");
+      reading = false;
+      incomingByte = "";
+      break;
+    }
+    if(incomingByte == "2"){
+      Serial.println("Twee ontvangen! Terug naar lezen keypad");
+      reading = false;
+      incomingByte = "";
+    }
   }
 }
 
