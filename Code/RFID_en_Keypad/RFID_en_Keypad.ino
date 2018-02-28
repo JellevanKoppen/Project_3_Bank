@@ -42,8 +42,6 @@ void loop() {
   if(Serial.available() > 0){
     incomingByte = Serial.readString();
     received = true;
-    Serial.println("Arduino received: ");
-    Serial.println(incomingByte);
     if(incomingByte == "1"){
       reading = false;
       incomingByte = "";
@@ -70,7 +68,6 @@ void receivedCard(){
     }
     if(incomingByte == "0"){
       Serial.println("Nul ontvangen! Terug naar loop");
-      reading = false;
       incomingByte = "";
       break;
     }
