@@ -140,9 +140,28 @@ def keuze_scherm():
         text(85,175,"naam:", verysmallText, black)
 
         text(475,125,"Saldo:", smallText, black)
-
-        text(125,125,"Gegevens:", smallText, black)
+        text(575,200,"€1.000,-", largeText, black)
         
+        button("Opnemen", 125, 400, 175, 100, green_dark, green, geld_opnemen)
+        button("Stoppen", 500, 400, 175, 100, red_dark, red, quit_app)
+        
+        
+        pygame.display.update()
+        clock.tick(15)
+
+def geld_opnemen():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        
+        display.fill(white)
+        TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
+        TextRect.center = ((display_width/2), (display_height/2-250))
+        display.blit(TextSurf, TextRect)
+        
+        button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
         
         pygame.display.update()
         clock.tick(15)
