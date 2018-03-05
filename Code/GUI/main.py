@@ -13,6 +13,7 @@ display_width = 800
 display_height = 600
 
 inputArray = [" "," "," ", " "]
+moneyArray = []
 
 #Colors:
 black = (0,0,0)
@@ -70,7 +71,17 @@ def input_state():
         else:
             output += '* '
     output.strip()
-    return output 
+    return output
+
+def input_amount():
+    output = ""
+    for x in range(0, len(moneyArray)):
+        output += moneyArray[x]
+    if moneyArray == []:
+        pass
+    else:
+        output+= ",-"
+    return output
 
 def inlog_scherm():
     ingelogd = False
@@ -141,9 +152,12 @@ def keuze_scherm():
 
         text(475,125,"Saldo:", smallText, black)
         text(575,200,"€1.000,-", largeText, black)
+
+        draw_border(125,400,175,100, black, 2)
+        draw_border(450, 400, 275, 100, black, 2)
         
         button("Opnemen", 125, 400, 175, 100, green_dark, green, geld_opnemen)
-        button("Stoppen", 500, 400, 175, 100, red_dark, red, quit_app)
+        button("Verander pincode", 450, 400, 275, 100, red_dark, red, pincode_aanpassen)
         
         
         pygame.display.update()
@@ -155,15 +169,62 @@ def geld_opnemen():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_KP0:
+                    moneyArray.append("1")
         
         display.fill(white)
         TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
         TextRect.center = ((display_width/2), (display_height/2-250))
         display.blit(TextSurf, TextRect)
+       
+        draw_border(150, 300, 500, 75, black, 2)
+        pygame.draw.rect(display, white, (150, 300, 500, 75))
+        TextSurf2, TextRect2 = text_objects(input_amount(), largeText, black)
+        TextRect2.center = ((display_width/2), (display_height/2+40))
+        display.blit(TextSurf2, TextRect2)
+
+        button("Opnemen", 150, 500, 150, 50, green_dark, green, quit_app)
         
-        button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
+        button("Stoppen", 500, 500, 150, 50, red_dark, red, quit_app)
         
         pygame.display.update()
         clock.tick(15)
+
+def pincode_aanpassen():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_KP0:
+                    moneyArray.append("1")
+        
+        display.fill(white)
+        TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
+        TextRect.center = ((display_width/2), (display_height/2-250))
+        display.blit(TextSurf, TextRect)
+       
+        draw_border(150, 150, 500, 75, black, 2)
+        pygame.draw.rect(display, white, (150, 150, 500, 75))
+        TextSurf2, TextRect2 = text_objects(input_amount(), largeText, black)
+        TextRect2.center = ((display_width/2), (display_height/2-50))
+        display.blit(TextSurf2, TextRect2)
+
+        draw_border(150, 300, 500, 75, black, 2)
+        pygame.draw.rect(display, white, (150, 300, 500, 75))
+        TextSurf3, TextRect3 = text_objects(input_amount(), largeText, black)
+        TextRect3.center = ((display_width/2), (display_height/2+50))
+        display.blit(TextSurf3, TextRect3)
+        
+
+        button("Opnemen", 150, 500, 150, 50, green_dark, green, quit_app)
+        
+        button("Stoppen", 500, 500, 150, 50, red_dark, red, quit_app)
+        
+        pygame.display.update()
+        clock.tick(15)
+
 
 inlog_scherm()
