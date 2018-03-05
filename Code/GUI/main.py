@@ -50,12 +50,16 @@ def button(msg,x,y,w,h,ic,ac, action=None):
     else:
         pygame.draw.rect(display, ic, (x, y, w, h))
 
-    smallText = pygame.font.Font('freesansbold.ttf', 25)
     textSurf, textRect = text_objects(msg, smallText, black)
     textRect.center = ((x+(w/2)), (y+(h/2)))
     display.blit(textSurf, textRect)
 
-def draw_border(x,y,w,h,c,t):
+def text(x,y,message, size, color):
+    TextSurf, TextRect = text_objects(message, size, color)
+    TextRect.center = (x,y)
+    display.blit(TextSurf, TextRect)
+
+def draw_border(x,y,w,h,c,t):#x-pos,y-pos,width,height,color,dikte
     pygame.draw.rect(display, c, (x-t, y-t, w+(t*2), h+(t*2)))
 
 def input_state():
@@ -66,7 +70,7 @@ def input_state():
         else:
             output += '* '
     output.strip()
-    return output
+    return output 
 
 def inlog_scherm():
     ingelogd = False
@@ -101,12 +105,45 @@ def inlog_scherm():
 
         button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
 
+        if pointer == 4:
+            ingelogd = True;
+
         if working:
             pygame.draw.rect(display, black, (50,450,175,100))
             TextSurf3, TextRect3 = text_objects("Scanning for RFID...", verysmallText, green)
             TextRect3.center = (137, 500) 
-            display.blit(TextSurf3, TextRect3) 
+            display.blit(TextSurf3, TextRect3)
 
+        pygame.display.update()
+        clock.tick(15)
+    if ingelogd:
+        keuze_scherm()
+
+def keuze_scherm():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        
+        display.fill(white)
+        TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
+        TextRect.center = ((display_width/2), (display_height/2-250))
+        display.blit(TextSurf, TextRect)
+
+        pygame.draw.rect(display, green_kiwi, (50, 100, 325,200))
+        pygame.draw.rect(display, green_kiwi, (425, 100, 325,200))
+        pygame.draw.rect(display, green_kiwi, (50, 350, 325,200))
+        pygame.draw.rect(display, green_kiwi, (425, 350, 325,200))
+
+        text(125,125,"Gegevens:", smallText, black)
+        text(85,175,"naam:", verysmallText, black)
+
+        text(475,125,"Saldo:", smallText, black)
+
+        text(125,125,"Gegevens:", smallText, black)
+        
+        
         pygame.display.update()
         clock.tick(15)
 
