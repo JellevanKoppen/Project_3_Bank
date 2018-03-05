@@ -69,6 +69,7 @@ void receivedCard(){
     if(incomingByte == "0"){
       Serial.println("Nul ontvangen! Terug naar loop");
       incomingByte = "";
+      received = false;
       break;
     }
     if(incomingByte == "2"){
