@@ -1,28 +1,34 @@
 """
 Author: Jelle van Koppen
 Date: 6-3-2018
-Version: 0.1
+Version: 2.0
 Description: main program
+
+This program does not include the database
 """
 #Modules
-import _mysql
 import serial
-import time
-import threading
 import pygame
+import threading
+import time
 
 #globals
 global tagID
-global reading
-global working
 global digitArray
-global reset
-global tijd
-global progressed
-progressed = False
-reset = False
-reading = False
-working = False
+global pincode
+global busy
+global count
+global alive
+
+#initiate variables
+alive = True
+busy = False
+comm = 'COM4'
+ser = serial.Serial(comm,9600)
+pincode = ""
+tagID = ""
+count = 0
+values = "0123456789ABCD*#"
 
 #initiate GUI
 pygame.init()
@@ -34,12 +40,6 @@ display_height = 600
 #valueArrays
 inputArray = [" "," "," ", " ", " ", " "]
 digitArray = []
-moneyArray = []
-
-#initiate variables
-#db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
-comm = 'COM4'
-ser = serial.Serial(comm,9600)
 
 #Colors
 black = (0,0,0)
@@ -60,124 +60,92 @@ display = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Kiwi Banking')
 clock = pygame.time.Clock()
 
-"""DATABASE FUNCTIONS"""
+"""ADDITIONAL FUCNTIONS"""
 
-def fetchDatabase(sql):
-    db.query(sql)
-    result = db.store_result()
-    data = result.fetch_row()
-    data = data[0][0].decode("utf-8")
-    return data
+def sleep():
+    time.sleep(15)
+    
+def timer():
+    global alive
+    while True:
+        alive = False
+        wait = threading.Thread(target=sleep)
+        wait.start()
+        wait.join()                    #wacht tot de sleep functie weer terug is
+        if alive == False:
+            print("Session Timed out!")
+            quit()
 
-"""END DATABASE FUNCTIONS"""
+"""END ADDITIONAL FUNCTIONS"""
 
 """PYTHON->ARDUINO FUNCTIONS"""
 
 def arrayReset():
     global digitArray
+    global count
+    count = 0
     digitArray = []
 
 def printArray():
     global digitArray
+    global pincode
+    output = ""
     print(digitArray)
+    for x in range(0, len(digitArray)):
+        output += digitArray[x]
+    pincode = output
     arrayReset()
 
-def write(m):
-    ser.write(m.encode())
-
-def idFound():
-    write('1')  #zet arduino in tweede loop
-
-def checkRFID():
-    global reading
+def idFound(ID):
     global tagID
-    global working
-    global reset
-    global tijd
-    working = True
-    write('1')                                  #zet arduino RFID aan (en keypad uit)
-    print("CheckRFID initiated!")
-    tijd = time.time()
-    wrong = 0
-    while working:
-        print("Zoeken naar kaart")
-        raw = ser.readline()
-        result = raw.strip().decode("utf-8")
-        if len(result) == 11:
-            if result == tagID:
-                write('2')
-                print("Kaart gevonden!")
-                reading = False
-                break
-            else:
-                print(".")
-                print("ID found: " + result)
-                print("ID saved: " + tagID)
-                wrong += 1
-                if wrong > 3:
-                    print("Te vaak fout!")
-                    write('0')
-                    reset = True
-                    break
-    print("Thread 1 Finished!")
-    
-def sideThread():
-    global tijd
-    global working
-    global reset
-    t2 = threading.Timer(5.0, checkRFID)
-    t2.start()
-    t2.join(timeout=10)
-    if t2.isAlive():            
-        print("Session timed_out rebooting...")
-        write('0')
-        reset = True
-    working = False
-    print("Thread 2 Finished!")
-    duration = time.time() - tijd
-    print("Tijdsduur: " + str(duration))
-
-def readRFID():
-    global tagID
-    global progressed
-    print("Bezig met rfid uitlezen")
-    while True:
-        raw = ser.readline()
-        result = raw.strip().decode("utf-8")
-        if len(result) == 11:
-            print(result)
-            tagID = result;
-            idFound()
-            break
-    print("Progressed = True")
-    progressed = True
-
-def readKeypad():
-    global digitArray
-    global reading
-    global working
-    global reset
-    if reset == True:
-        arrayReset()
-        reset = False
-        reading = False
+    global count
+    global alive
+    if tagID == "":
+        tagID = ID
+    elif tagID == ID:
+        count = 0
+        alive = True
+        return
     else:
-        if reading == False:
-            t1 = threading.Thread(target=sideThread)
-            t1.start()
-            reading = True
-        if working == False:
-            raw = ser.readline()
-            result = raw.strip().decode("utf-8")
-            print(result)
-            digit = result
-            if len(digit) < 3:
-                if(digit == '*'):
-                   arrayReset()
-                elif(digit == '#'):
-                    printArray()
-                else:
-                   digitArray.append(digit)
+        count += 1
+        print("Found other ID")
+        print("Saved ID: " + tagID)
+        print("Found ID: " + ID)
+        if count == 10:
+            print("abort")
+
+def keyFound(key):
+    global digitArray
+    global alive
+    if(key in values):
+        alive = True
+        if(key == '*'):
+           arrayReset()
+        elif(key == '#'):
+            printArray()
+        else:
+           digitArray.append(key)
+
+def readArduino():
+    raw = ser.readline()
+    result = raw.strip().decode("utf-8")
+    if len(result) == 11:
+        print(result)
+        idFound(result)
+    elif len(result) == 1:
+        print(result)
+        keyFound(result)
+    else:
+        print("Nonsense:")
+        print(result)
+
+def readThread():
+    global busy
+    busy = True
+    t1 = threading.Thread(target=readArduino)
+    t1.start()
+    t1.join()
+    busy = False
 
 """END PYTHON->ARDUINO FUNCTIONS"""
 
@@ -214,16 +182,6 @@ def text(x,y,message, size, color):
 def draw_border(x,y,w,h,c,t):#x-pos,y-pos,width,height,color,dikte
     pygame.draw.rect(display, c, (x-t, y-t, w+(t*2), h+(t*2)))
 
-def input_amount():
-    output = ""
-    for x in range(0, len(moneyArray)):
-        output += moneyArray[x]
-    if moneyArray == []:
-        pass
-    else:
-        output+= ",-"
-    return output
-
 def input_state():
     output = ""
     for x in range(0, len(inputArray)):
@@ -237,21 +195,34 @@ def input_state():
     output.strip()
     return output
 
+def input_amount():
+    output = ""
+    for x in range(0, len(digitArray)):
+        output += digitArray[x]
+    if digitArray == []:
+        pass
+    else:
+        output = '{0:,d}'.format(int(output))
+        output = str(output).replace(",",".")
+        output = "€" + output + ",-"
+    return output
+
 
 """END GUI FUNCTIONS"""
 
 """GUI WINDOWS"""
 def inlog_scherm():
-    global working
-    global progressed
+    global tagID
+    global pincode
+    global busy
     ingelogd = False
-    working = False
+    print("Welcome")
+    print("Present RFID card")
     while not ingelogd:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-        
                     
         display.fill(green_kiwi)
         TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
@@ -266,21 +237,18 @@ def inlog_scherm():
 
         button("Stoppen", 325, 500, 150, 50, red_dark, red, quit_app)
 
-        if working:
+        if tagID == "":
             pygame.draw.rect(display, black, (50,450,175,100))
             TextSurf3, TextRect3 = text_objects("Scanning for RFID...", verysmallText, green)
             TextRect3.center = (137, 500) 
             display.blit(TextSurf3, TextRect3)
 
-        if not working and progressed == False:
-            working = True
-            t1 = threading.Thread(target=readRFID)
+        if not busy:
+            t1 = threading.Thread(target=readThread)
             t1.start()
-        if progressed == True:
-            print("Enter pin:")
-            working = False
-            readKeypad()
 
+        if pincode == "1234":
+            ingelogd = True
 
         pygame.display.update()
         clock.tick(15)
@@ -321,14 +289,12 @@ def keuze_scherm():
         clock.tick(15)
 
 def geld_opnemen():
+    global busy
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_KP0:
-                    moneyArray.append("1")
         
         display.fill(white)
         TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
@@ -340,6 +306,14 @@ def geld_opnemen():
         TextSurf2, TextRect2 = text_objects(input_amount(), largeText, black)
         TextRect2.center = ((display_width/2), (display_height/2+40))
         display.blit(TextSurf2, TextRect2)
+
+        pygame.draw.rect(display, white, ((display_width/2-125),(display_height/2-20),250,30))
+
+        text((display_width/2),(display_height/2),"Voer hoeveelheid in", smallText, black)
+
+        if not busy:
+            t1 = threading.Thread(target=readThread)
+            t1.start()
 
         button("Opnemen", 150, 500, 150, 50, green_dark, green, quit_app)
         
@@ -389,6 +363,9 @@ def pincode_aanpassen():
 """MAIN PROGRAM"""
 def main():
     while True:
-        inlog_scherm()
+        print("Booting up...")
+        timeout = threading.Thread(target=timer)
+        timeout.start()
+        inlog_scherm()        
 main()
 """END MAIN PROGRAM"""
