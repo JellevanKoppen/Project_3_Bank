@@ -1,0 +1,28 @@
+##########
+gebruikers
+----------
+Klantid (PrivateKey)
+naam
+pincode(hashed)
+pasnr(hashed)
+rol
+geblokkeerd
+
+##########
+rekeningen
+----------
+rekeningnr(PrivateKey)
+klantid (ForeignKey)
+saldo
+
+##########
+transacties
+----------
+transactieid(PrivateKey)
+klantid(ForeignKey)
+vanrekeningnr(ForeignKey)
+naarrekeningnr(ForeignKey)(magNullZijn)
+transactietype
+bedrag
+omschrijving
+##########
