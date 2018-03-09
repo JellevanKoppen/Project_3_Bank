@@ -3,8 +3,6 @@ Author: Jelle van Koppen
 Date: 6-3-2018
 Version: 2.0
 Description: main program
-
-This program does not include the database
 """
 #Modules
 import serial
@@ -23,7 +21,7 @@ global alive
 #initiate variables
 alive = True
 busy = False
-comm = 'COM4'
+comm = 'COM8'
 ser = serial.Serial(comm,9600)
 pincode = ""
 tagID = ""
@@ -316,6 +314,8 @@ def geld_opnemen():
             t1.start()
 
         button("Opnemen", 150, 500, 150, 50, green_dark, green, quit_app)
+
+        button("Terug", 325, 500, 150, 50,red_dark, red, keuze_scherm)
         
         button("Stoppen", 500, 500, 150, 50, red_dark, red, quit_app)
         
@@ -351,6 +351,8 @@ def pincode_aanpassen():
         
 
         button("Opnemen", 150, 500, 150, 50, green_dark, green, quit_app)
+
+        button("Terug", 325, 500, 150, 50,red_dark, red, keuze_scherm)
         
         button("Stoppen", 500, 500, 150, 50, red_dark, red, quit_app)
         
@@ -366,6 +368,6 @@ def main():
         print("Booting up...")
         timeout = threading.Thread(target=timer)
         timeout.start()
-        inlog_scherm()        
+        inlog_scherm()
 main()
 """END MAIN PROGRAM"""
