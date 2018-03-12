@@ -9,20 +9,31 @@ import _mysql
 
 db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
 
-sql = """SELECT pincode FROM gebruikers WHERE tagID = 'TAGTAGTAG'; """
+#sql = """SELECT pincode FROM gebruikers WHERE tagID = 'TAGTAG';"""
 
-pincode = "1234"
+def fetchData(sql):
+    db.query(sql)
+    result = db.store_result()
+    data = result.fetch_row()
+    return data
 
-db.query(sql)
+def selectPincode(tag):
+    str(tag)
+    sql = "SELECT pincode FROM gebruikers WHERE tagID = '%s'" % tag
+    data = fetchData(sql)
+    return data
 
-result = db.store_result()
+def manageData(data):
+    try:
+        data = data[0][0].decode("utf-8")
+        return data
+    except IndexError:
+        print("Error geen data gevonden")
 
-data = result.fetch_row()
+tag = "TAGTAG"
 
-data = data[0][0].decode("utf-8")
+data = selectPincode(tag)
+resultaat = manageData(data)
 
-if data == pincode:
-    ingelogt = True
-
-print(data)
+print(resultaat)
 
