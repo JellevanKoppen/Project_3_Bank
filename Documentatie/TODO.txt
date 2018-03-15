@@ -1,0 +1,11 @@
+Presentatie Project 3:
+Opsommen wat het allemaal kan
+
+
+
+To Do:
+ERD
+Flowchart
+componentenmodel
+DemoFilmpje
+Ontwerp arduino (fritzing)
