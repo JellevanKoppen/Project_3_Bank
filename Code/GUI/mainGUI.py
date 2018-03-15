@@ -63,6 +63,13 @@ def text(x,y,message, size, color):
 def draw_border(x,y,w,h,c,t):#x-pos,y-pos,width,height,color,dikte
     pygame.draw.rect(display, c, (x-t, y-t, w+(t*2), h+(t*2)))
 
+def foutmelding(message):
+    draw_border(100,100,600,400,black,2)
+    pygame.draw.rect(display, red, (100,100,600,400))
+    TextSurf, TextRect = text_objects(message, largeText, black)
+    TextRect.center = (400,300)
+    display.blit(TextSurf, TextRect)
+    
 def input_state():
     output = ""
     for x in range(0, len(inputArray)):
@@ -108,6 +115,8 @@ def inlog_scherm():
         TextRect.center = ((display_width/2), (display_height/2-100))
         display.blit(TextSurf, TextRect)
 
+        
+
         draw_border(150, 300, 500, 75, black, 2)
         pygame.draw.rect(display, white, (150, 300, 500, 75))
         TextSurf2, TextRect2 = text_objects(input_state(), largeText, black)
@@ -124,6 +133,8 @@ def inlog_scherm():
             TextSurf3, TextRect3 = text_objects("Scanning for RFID...", verysmallText, green)
             TextRect3.center = (137, 500) 
             display.blit(TextSurf3, TextRect3)
+
+        foutmelding("Pas Geblokkeerd")
 
         pygame.display.update()
         clock.tick(15)
@@ -152,6 +163,7 @@ def keuze_scherm():
 
         text(475,125,"Saldo:", smallText, black)
         text(575,200,"€1.000,-", largeText, black)
+
 
         draw_border(125,400,175,100, black, 2)
         draw_border(450, 400, 275, 100, black, 2)

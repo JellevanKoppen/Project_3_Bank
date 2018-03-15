@@ -13,7 +13,7 @@ db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
 """
 All the sql scripts:
 
-gegevens:
+Pull data:
 
 pincode = SELECT pincode FROM gebruikers WHERE tagID = '%s' % tag
 
@@ -24,6 +24,17 @@ naam = SELECT naam FROM gebruikers WHERE klantid = '%s' % klantid
 geblokkeerd = SELECT geblokkeerd FROM gebruikers WHERE klantid = '%s' % klantid
 
 saldo = SELECT saldo FROM rekeningen WHERE rekeningnr = '%s' AND klantid = '%s' % rekeningnr, klantid
+
+=====================================================================================================
+
+Write data:
+neem saldo op:
+
+UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s' % (saldo, rekeningnr)
+
+verander pincode:
+
+UPDATE gebruikers SET pincode = '%s' WHERE klantid = '%s' % (pincode, klantid)
 """
 
 global rows

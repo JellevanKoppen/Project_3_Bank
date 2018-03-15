@@ -14,6 +14,7 @@ import _mysql
 
 #globals
 global tagID
+global klantID
 global digitArray
 global pincode
 global busy
@@ -23,6 +24,7 @@ global keyA
 global keyB
 global keyC
 global rows
+global keuze
 
 #initiate variables
 alive = True
@@ -30,8 +32,9 @@ busy = False
 keyA = False
 keyB = False
 keyC = False
-comm = 'COM8'
+comm = 'COM4'
 pincode = ""
+keuze = ""
 tagID = ""
 count = 0
 rows = 0
@@ -39,8 +42,8 @@ values = "0123456789ABCD*#"
 
 #initiate GUI,Database,Serial
 pygame.init()
-db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
-#ser = serial.Serial(comm,9600)
+#db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
+ser = serial.Serial(comm,9600)
 
 #Screen measurements
 display_width = 800
@@ -99,28 +102,36 @@ def fetchData(sql):
         data.append(result.fetch_row())
     return data
 
-def selectPincode(tag):
-    tag = str(tag)
+def selectPincode():
+    global tagID
+    tag = str(tagID)
     sql = "SELECT pincode FROM gebruikers WHERE tagID = '%s'" % tag
     data = fetchData(sql)
     return data
 
-def getKlantid(pincode,tag):
+def getGeblokkeerd():
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT geblokkeerd FROM gebruikers WHERE tagID = '%s'" % tag
+    data = fetchData(sql)
+    return data
+
+def getKlantid():
+    global klantID
+    global pincode
+    global tagID
     pincode = str(pincode)
-    tag = str(tag)
+    tag = str(tagID)
     sql = "SELECT klantid FROM gebruikers WHERE pincode = '%s' AND tagID = '%s'" % (pincode, tag)
     data = fetchData(sql)
     return data
 
-def getGegevens(klantid):
-    klantid = str(klantid)
+def getNaam():
+    global klantID
+    klantid = str(klantID)
     sql = "SELECT naam FROM gebruikers WHERE klantid = '%s'" % klantid
     naam = fetchData(sql)
     return naam
-    #sql = "geblokkeerd = SELECT geblokkeerd FROM gebruikers WHERE klantid = '%s'" % klantid
-    #geblokkeerd = fetchData(sql)
-    #data = (naam,geblokkeerd)
-    #return data
 
 def getRekening(klantid):
     klantid = str(klantid)
@@ -253,11 +264,16 @@ def button(msg,x,y,w,h,ic,ac, action=None):
     textRect.center = ((x+(w/2)), (y+(h/2)))
     display.blit(textSurf, textRect)
 
-def data_entry(x,y, var, size, color):
+def data_entry(x,y, var,row, size, color):
     if var == "saldo":
         data = getSaldo()
         data = manageData(data)
-        data = data[0]
+        data = data[row]
+        data = moneyfier(data)
+    if var == "naam":
+        data = getNaam()
+        data = manageData(data)
+        data = data[row]
     TextSurf, TextRect = text_objects(data, size, color)
     TextRect.center = (x,y)
     display.blit(TextSurf, TextRect)
@@ -265,6 +281,13 @@ def data_entry(x,y, var, size, color):
 def text(x,y,message, size, color):
     TextSurf, TextRect = text_objects(message, size, color)
     TextRect.center = (x,y)
+    display.blit(TextSurf, TextRect)
+
+def foutmelding(message):
+    draw_border(100,100,600,400,black,2)
+    pygame.draw.rect(display, red, (100,100,600,400))
+    TextSurf, TextRect = text_objects(message, smallText, black)
+    TextRect.center = (400,300)
     display.blit(TextSurf, TextRect)
 
 def draw_border(x,y,w,h,c,t):#x-pos,y-pos,width,height,color,dikte
@@ -283,6 +306,12 @@ def input_state():
     output.strip()
     return output
 
+def moneyfier(output):
+    output = '{0:,d}'.format(int(output))
+    output = str(output).replace(",",".")
+    output = "€" + output + ",-"
+    return output
+
 def input_amount():
     output = ""
     for x in range(0, len(digitArray)):
@@ -290,11 +319,19 @@ def input_amount():
     if digitArray == []:
         pass
     else:
-        output = '{0:,d}'.format(int(output))
-        output = str(output).replace(",",".")
-        output = "€" + output + ",-"
+        moneyfier(output)
     return output
 
+
+def keuze1():
+    global keuze
+    keuze = 0
+    keuze_scherm()
+
+def keuze2():
+    global keuze
+    keuze = 1
+    keuze_scherm()
 
 """END GUI FUNCTIONS"""
 
@@ -303,6 +340,7 @@ def inlog_scherm():
     global tagID
     global pincode
     global busy
+    global klantID
     ingelogd = False
     print("Welcome")
     print("Present RFID card")
@@ -329,13 +367,23 @@ def inlog_scherm():
             TextSurf3, TextRect3 = text_objects("Scanning for RFID...", verysmallText, green)
             TextRect3.center = (137, 500) 
             display.blit(TextSurf3, TextRect3)
+        else:
+            geblokkeerd = getGeblokkeerd()
+            geblokkeerd = geblokkeerd[0]
+            if geblokkeerd == "ja":
+                foutmelding("Deze pas is geblokkeerd, u kunt geen geld uitnemen")
+            
 
         if not busy:
             t1 = threading.Thread(target=readThread)
             t1.start()
 
-        if pincode == "1234":
-            ingelogd = True
+        if pincode !== "":
+            klantID = getKlantid()
+            if klantID !== "":
+                ingelogd = True
+            else:
+                print("FOUT!")
 
         pygame.display.update()
         clock.tick(15)
@@ -360,27 +408,29 @@ def kies_rekening():
 
         if keyA:
              keyA = False
-             geld_opnemen()
+             keuze1()
         elif keyB:
              keyB = False
-             pincode_aanpassen()
+             keuze2()
 
         draw_border(100,200,250,200, black, 2)
         draw_border(475, 200, 250, 200, black, 2)
-        button("Opnemen", 100, 200, 250, 200, green_dark, green, keuze_scherm)
+        button("Rekening 1", 100, 200, 250, 200, green_dark, green, keuze1)
         text(325,225,"A", smallText, black)
         text(150,350,"Saldo:", smallText, black)
-        data_entry(250, 350, "saldo",smallText, black)
+        data_entry(250, 350, "saldo",0,smallText, black)
         
-        button("Verander pincode", 475, 200, 250, 200, green_dark, green, keuze_scherm)
+        button("Rekening 2", 475, 200, 250, 200, green_dark, green, keuze2)
         text(700,225,"B", smallText, black)
+        text(500,350,"Saldo:",1, smallText, black)
+        data_entry(575, 350, "saldo",smallText, black)
         
         
         pygame.display.update()
         clock.tick(15)    
 
 def keuze_scherm():
-    global keyA, keyB, keyC
+    global keyA, keyB, keyC, keuze
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -398,10 +448,11 @@ def keuze_scherm():
 
         text(125,125,"Gegevens:", smallText, black)
         text(85,175,"naam:", verysmallText, black)
-        #text(125,175,getGegevens(),verysmallText,red)
+        data_entry(125,225, "naam",0, smallText, black)
 
         text(475,125,"Saldo:", smallText, black)
-        text(575,200,"€1.000,-", largeText, black)
+        data_entry(575, 200, "saldo",keuze,largeText, black)
+        
 
         draw_border(125,400,175,100, black, 2)
         draw_border(450, 400, 275, 100, black, 2)
@@ -428,7 +479,7 @@ def keuze_scherm():
         clock.tick(15)
 
 def geld_opnemen():
-    global busy
+    global busy, keyA, keyB, keyC
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -453,6 +504,16 @@ def geld_opnemen():
             t1 = threading.Thread(target=readThread)
             t1.start()
 
+        if keyA:
+            keyA = False
+            quit_app()
+        elif keyB:
+            keyB = False
+            keuze_scherm()
+        elif keyC:
+            keyC = False
+            quit_app()
+
         button("Opnemen", 150, 500, 170, 50, green_dark, green, quit_app)
         text(310,510,"A", verysmallText, black)
 
@@ -466,6 +527,7 @@ def geld_opnemen():
         clock.tick(15)
 
 def pincode_aanpassen():
+    global busy, keyA, keyB, keyC
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -498,7 +560,9 @@ def pincode_aanpassen():
             keyC = False
             quit_app()
             
-        
+        if not busy:
+            t1 = threading.Thread(target=readThread)
+            t1.start()
 
         button("Veranderen", 150, 500, 170, 50, green_dark, green, quit_app)
         text(310,510,"A", verysmallText, black)
@@ -521,6 +585,6 @@ def main():
         print("Booting up...")
         timeout = threading.Thread(target=timer)
         timeout.start()
-        kies_rekening()
+        pincode_aanpassen()
 main()
 """END MAIN PROGRAM"""
