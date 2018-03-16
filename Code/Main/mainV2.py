@@ -35,15 +35,16 @@ keyC = False
 comm = 'COM4'
 pincode = ""
 keuze = ""
-tagID = ""
+klantID = "5"
+tagID = "TAGTAG"
 count = 0
 rows = 0
 values = "0123456789ABCD*#"
 
 #initiate GUI,Database,Serial
 pygame.init()
-#db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
-ser = serial.Serial(comm,9600)
+db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
+#ser = serial.Serial(comm,9600)
 
 #Screen measurements
 display_width = 800
@@ -139,12 +140,10 @@ def getRekening(klantid):
     data = fetchData(sql)
     return data
 
-def getSaldo():
-    klantid = "5"
-    rekeningnr = "1"
-    rekeningnr = str(rekeningnr)
-    klantid = str(klantid)
-    sql = "SELECT saldo FROM rekeningen WHERE rekeningnr = '%s' AND klantid = '%s'" % (rekeningnr, klantid)
+def getSaldo():   #Geeft het saldo van één rekeningnummer
+    global klantID
+    klantid = str(klantID)
+    sql = "SELECT saldo FROM rekeningen WHERE klantid = '%s'" % klantid
     saldo = fetchData(sql)
     return saldo
     
@@ -244,6 +243,7 @@ def readThread():
 
 def quit_app():
     inlog_scherm()
+    arrayReset()
 
 def text_objects(text, font, color):
     textSurface = font.render(text, True, color)
@@ -268,7 +268,7 @@ def data_entry(x,y, var,row, size, color):
     if var == "saldo":
         data = getSaldo()
         data = manageData(data)
-        data = data[row]
+        data = data[row-1]
         data = moneyfier(data)
     if var == "naam":
         data = getNaam()
@@ -359,8 +359,7 @@ def inlog_scherm():
         TextSurf2, TextRect2 = text_objects(input_state(), largeText, black)
         TextRect2.center = ((display_width/2), (display_height/2+40))
         display.blit(TextSurf2, TextRect2)
-
-        button("Login met '#'", 325, 500, 175, 50, red_dark, red, quit_app)
+        text(400,500,"Inloggen: '#' | Correctie: '*'", smallText, black)
 
         if tagID == "":
             pygame.draw.rect(display, black, (50,450,175,100))
@@ -378,9 +377,9 @@ def inlog_scherm():
             t1 = threading.Thread(target=readThread)
             t1.start()
 
-        if pincode !== "":
+        if pincode != "":
             klantID = getKlantid()
-            if klantID !== "":
+            if klantID != "":
                 ingelogd = True
             else:
                 print("FOUT!")
@@ -422,8 +421,8 @@ def kies_rekening():
         
         button("Rekening 2", 475, 200, 250, 200, green_dark, green, keuze2)
         text(700,225,"B", smallText, black)
-        text(500,350,"Saldo:",1, smallText, black)
-        data_entry(575, 350, "saldo",smallText, black)
+        text(525,350,"Saldo:", smallText, black)
+        data_entry(625, 350, "saldo",1,smallText, black)
         
         
         pygame.display.update()
@@ -448,7 +447,7 @@ def keuze_scherm():
 
         text(125,125,"Gegevens:", smallText, black)
         text(85,175,"naam:", verysmallText, black)
-        data_entry(125,225, "naam",0, smallText, black)
+        data_entry(200,175, "naam",0, verysmallText, black)
 
         text(475,125,"Saldo:", smallText, black)
         data_entry(575, 200, "saldo",keuze,largeText, black)
@@ -506,7 +505,7 @@ def geld_opnemen():
 
         if keyA:
             keyA = False
-            quit_app()
+            opnemen()
         elif keyB:
             keyB = False
             keuze_scherm()
@@ -514,8 +513,8 @@ def geld_opnemen():
             keyC = False
             quit_app()
 
-        button("Opnemen", 150, 500, 170, 50, green_dark, green, quit_app)
-        text(310,510,"A", verysmallText, black)
+        button("Opnemen", 150, 500, 170, 50, green_dark, green, opnemen)
+        text(310,510,"#", verysmallText, black)
 
         button("Terug", 335, 500, 150, 50,red_dark, red, keuze_scherm)
         text(475,510,"B", verysmallText, black)
@@ -585,6 +584,6 @@ def main():
         print("Booting up...")
         timeout = threading.Thread(target=timer)
         timeout.start()
-        pincode_aanpassen()
+        kies_rekening()
 main()
 """END MAIN PROGRAM"""

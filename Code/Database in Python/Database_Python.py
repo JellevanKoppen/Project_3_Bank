@@ -50,6 +50,9 @@ def fetchData(sql):
         data.append(result.fetch_row())
     return data
 
+def pushData(sql):
+    db.query(sql)
+
 def selectPincode(tag):
     tag = str(tag)
     sql = "SELECT pincode FROM gebruikers WHERE tagID = '%s'" % tag
@@ -78,6 +81,15 @@ def getRekening(klantid):
     data = fetchData(sql)
     return data
 
+def opnemen(rekeningnr, saldo):
+    rekeningnr = str(rekeningnr)
+    sql = "UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s'" % (saldo, rekeningnr)
+    data = pushData(sql)
+    sql = "SELECT saldo FROM rekeningen WEHRE rekeningnr = '%s'" % rekeningnr
+    data = fetchData(sql)
+    return data
+    
+
 def getSaldo(rekeningnr, klantid):
     rekeningnr = str(rekeningnr)
     klantid = str(klantid)
@@ -105,4 +117,10 @@ rekening = getRekening(klantid)
 rekening = manageData(rekening)
 for x in range(0, len(rekening)):
     print("Rekeningnummers: " + rekening[x])
+
+saldo = getSaldo(rekening[0],klantid)
+saldo = manageData(saldo)
+print (saldo)
+geld = opnemen(rekening[0], 100)
+print (geld)
 
