@@ -35,6 +35,8 @@ UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s' % (saldo, rekeningnr)
 verander pincode:
 
 UPDATE gebruikers SET pincode = '%s' WHERE klantid = '%s' % (pincode, klantid)
+
+Get poging:
 """
 
 global rows
@@ -85,7 +87,7 @@ def opnemen(rekeningnr, saldo):
     rekeningnr = str(rekeningnr)
     sql = "UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s'" % (saldo, rekeningnr)
     data = pushData(sql)
-    sql = "SELECT saldo FROM rekeningen WEHRE rekeningnr = '%s'" % rekeningnr
+    sql = "SELECT saldo FROM rekeningen WHERE rekeningnr = '%s'" % rekeningnr
     data = fetchData(sql)
     return data
     
@@ -112,15 +114,20 @@ pincode = "5689"
 klantid = getKlantid(pincode,tag)
 klantid = manageData(klantid)
 klantid = klantid[0]
-print (klantid)
+#print (klantid)
 rekening = getRekening(klantid)
 rekening = manageData(rekening)
-for x in range(0, len(rekening)):
-    print("Rekeningnummers: " + rekening[x])
+#for x in range(0, len(rekening)):
+#    print("Rekeningnummers: " + rekening[x])
 
 saldo = getSaldo(rekening[0],klantid)
 saldo = manageData(saldo)
+saldo = saldo[0]
+saldo = int(saldo)
 print (saldo)
-geld = opnemen(rekening[0], 100)
-print (geld)
+saldo *= 2
+saldo = str(saldo)
+geld = opnemen(rekening[0], saldo)
+geld = geld[0][0][0]
+print (int(geld))
 

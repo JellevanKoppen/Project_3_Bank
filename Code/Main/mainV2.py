@@ -32,11 +32,11 @@ busy = False
 keyA = False
 keyB = False
 keyC = False
-comm = 'COM4'
+comm = 'COM8'
 pincode = ""
 keuze = ""
-klantID = "5"
-tagID = "TAGTAG"
+klantID = ""
+tagID = ""
 count = 0
 rows = 0
 values = "0123456789ABCD*#"
@@ -44,7 +44,7 @@ values = "0123456789ABCD*#"
 #initiate GUI,Database,Serial
 pygame.init()
 db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
-#ser = serial.Serial(comm,9600)
+ser = serial.Serial(comm,9600)
 
 #Screen measurements
 display_width = 800
@@ -71,6 +71,8 @@ largeText = pygame.font.Font('freesansbold.ttf', 60)
 #Set screen options
 display = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Kiwi Banking')
+img = pygame.image.load('kiwi.jpg')
+pygame.display.set_icon(img)
 clock = pygame.time.Clock()
 
 """ADDITIONAL FUCNTIONS"""
@@ -103,6 +105,9 @@ def fetchData(sql):
         data.append(result.fetch_row())
     return data
 
+def pushData(sql):
+    db.query(sql)
+
 def selectPincode():
     global tagID
     tag = str(tagID)
@@ -116,6 +121,20 @@ def getGeblokkeerd():
     sql = "SELECT geblokkeerd FROM gebruikers WHERE tagID = '%s'" % tag
     data = fetchData(sql)
     return data
+
+def getPogingen():
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT pogingen FROM gebruikers WHERE tagID = '%s'" % tag
+    data = fetchData(sql)
+    return data
+
+def setPogingen(poging):
+    global tagID
+    tag = str(tagID)
+    poging = str(poging)
+    sql = "UPDATE gebruikers SET pogingen = '%s' WHERE tagID = '%s'" % (poging, tagID)
+    pushData(sql)
 
 def getKlantid():
     global klantID
@@ -140,12 +159,27 @@ def getRekening(klantid):
     data = fetchData(sql)
     return data
 
+def blokkeer():
+    global tagID
+    tag = str(tagID)
+    sql = "UPDATE gebruikers SET geblokkeerd = 'ja' WHERE tagID = '%s'" % tagID
+    pushData(sql)
+
 def getSaldo():   #Geeft het saldo van één rekeningnummer
     global klantID
     klantid = str(klantID)
     sql = "SELECT saldo FROM rekeningen WHERE klantid = '%s'" % klantid
     saldo = fetchData(sql)
     return saldo
+
+def opnemen(rekeningnr, saldo):
+    rekeningnr = str(rekeningnr)
+    saldo = str(saldo)
+    sql = "UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s'" % (saldo, rekeningnr)
+    pushData(sql)
+    sql = "SELECT saldo FROM rekeningen WHERE rekeningnr = '%s'" % rekeningnr
+    data = fetchData(sql)
+    return data
     
 def manageData(data):
     result = []
@@ -284,8 +318,8 @@ def text(x,y,message, size, color):
     display.blit(TextSurf, TextRect)
 
 def foutmelding(message):
-    draw_border(100,100,600,400,black,2)
-    pygame.draw.rect(display, red, (100,100,600,400))
+    draw_border(50,100,700,400,black,2)
+    pygame.draw.rect(display, red, (50,100,700,400))
     TextSurf, TextRect = text_objects(message, smallText, black)
     TextRect.center = (400,300)
     display.blit(TextSurf, TextRect)
@@ -319,7 +353,7 @@ def input_amount():
     if digitArray == []:
         pass
     else:
-        moneyfier(output)
+        output = moneyfier(output)
     return output
 
 
@@ -368,9 +402,15 @@ def inlog_scherm():
             display.blit(TextSurf3, TextRect3)
         else:
             geblokkeerd = getGeblokkeerd()
+            geblokkeerd = manageData(geblokkeerd)
             geblokkeerd = geblokkeerd[0]
+            geblokkeerd = geblokkeerd.decode("utf-8")
             if geblokkeerd == "ja":
                 foutmelding("Deze pas is geblokkeerd, u kunt geen geld uitnemen")
+            pogingen = getPogingen()
+            pogingen = manageData(pogingen)
+            pogingen = pogingen[0]
+            pogingen = pogingen.decode("utf-8")
             
 
         if not busy:
@@ -378,16 +418,32 @@ def inlog_scherm():
             t1.start()
 
         if pincode != "":
-            klantID = getKlantid()
+            klant = getKlantid()
+            klant = manageData(klant)
+            try:
+                klantID = klant[0]
+                print("KlantID gevonden: " + klantID)
+                pincode = ""
+            except IndexError:
+                print("Geen klantID gevonden")
+                pogingen = int(pogingen)
+                pogingen += 1
+                pincode = ""
+                if pogingen >= 3:
+                    blokkeer()
+                else:
+                    print("Setting pogingen to: "+str(pogingen))
+                    setPogingen(str(pogingen))
             if klantID != "":
                 ingelogd = True
+                pincode = ""
             else:
-                print("FOUT!")
+                print("Kaart niet gevonden")
 
         pygame.display.update()
         clock.tick(15)
     if ingelogd:
-        keuze_scherm()
+        kies_rekening()
 
 def kies_rekening():
     global keyA, keyB, keyC
@@ -478,7 +534,7 @@ def keuze_scherm():
         clock.tick(15)
 
 def geld_opnemen():
-    global busy, keyA, keyB, keyC
+    global busy, keyA, keyB, keyC, pincode, keuze
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -512,6 +568,23 @@ def geld_opnemen():
         elif keyC:
             keyC = False
             quit_app()
+
+        if pincode != "":
+            bedrag = pincode
+            pincode = ""
+            print (bedrag)
+            print (keuze)
+            if keuze == 1:
+                rekening = 0
+            else:
+                rekening = 1
+            saldo = getSaldo()
+            saldo = saldo[rekening][0][0].decode("utf-8")
+            saldo = int(saldo)
+            if saldo == 0:
+                print("Te weinig saldo!")
+            print (saldo)
+            
 
         button("Opnemen", 150, 500, 170, 50, green_dark, green, opnemen)
         text(310,510,"#", verysmallText, black)
@@ -584,6 +657,6 @@ def main():
         print("Booting up...")
         timeout = threading.Thread(target=timer)
         timeout.start()
-        kies_rekening()
+        inlog_scherm()
 main()
 """END MAIN PROGRAM"""
