@@ -38,7 +38,7 @@ keyC = False
 comm = 'COM8'
 pincode = ""
 keuze = ""
-klantID = ""
+klantID = "5"
 tagID = ""
 count = 0
 rows = 0
@@ -445,7 +445,7 @@ def inlog_scherm():
             TextSurf3, TextRect3 = text_objects("Scanning for RFID...", verysmallText, green)
             TextRect3.center = (137, 500) 
             display.blit(TextSurf3, TextRect3)
-        else:
+       else:
             draw_border(150, 300, 500, 75, black, 2)
             pygame.draw.rect(display, white, (150, 300, 500, 75))
             TextSurf2, TextRect2 = text_objects(input_state(), largeText, black)
