@@ -1,0 +1,23 @@
+#####################################
+Geld overmaken naar andere rekeningen:
+proces:
+- Selecteer bedrag
+- Kies rekening
+- Check genoeg saldo
+- Haal geld van ene rekening
+- Stort geld bij andere rekening
+
+TO DO:					DONE
+- Geld kunnen storten 			  X
+- Bestemmingsrekening selecteren	x
+- GUI Geld overmaken pagina		x
+- Keuzemenu knop toevoegen		x
+- TESTEN
+
+######################################## 
+AANGEVEN in hoofdmenu bij welke bank je hoort
+FRUITBANKING?
+########################################
+Zorgen dat je bij iemand anders kan pinnen met jouw pasje
+- TagID opschrijven (beide)
+- Keypad regelen (later weer terug geven)!

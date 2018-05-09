@@ -2,7 +2,7 @@
 """
 Author: Jelle van Koppen
 Date: 6-3-2018
-Version: 2.0
+Version: 4.0
 Description: main program
 """
 #Modules
@@ -14,7 +14,6 @@ import _mysql
 
 #globals
 global tagID
-global klantID
 global digitArray
 global pincode
 global busy
@@ -23,6 +22,7 @@ global alive
 global keyA
 global keyB
 global keyC
+global keyD
 global rows
 global keuze
 global volgende
@@ -35,18 +35,26 @@ busy = False
 keyA = False
 keyB = False
 keyC = False
+keyD = False
 comm = 'COM8'
 pincode = ""
 keuze = ""
-klantID = "5"
 tagID = ""
 count = 0
 rows = 0
 values = "0123456789ABCD*#"
+hostadres = "37.139.30.72"
+
+"""DEBUGGING"""
+
+#tagID = "19EEB128"
+#pincode = "1234"
+
+"""DEBUGGING"""
 
 #initiate GUI,Database,Serial
 pygame.init()
-db = _mysql.connect(host="localhost", user="root", passwd="", db="kiwibank")
+db = _mysql.connect(host=hostadres, user="bank", passwd="gTR1JFgHQnFvw80E", db="bank")
 ser = serial.Serial(comm,9600)
 
 #Screen measurements
@@ -117,87 +125,6 @@ def fetchData(sql):
 def pushData(sql):
     db.query(sql)
 
-def selectPincode():
-    global tagID
-    tag = str(tagID)
-    sql = "SELECT pincode FROM gebruikers WHERE tagID = '%s'" % tag
-    data = fetchData(sql)
-    return data
-
-def setPincode(pincode):
-    global klantID
-    pincode = str(pincode)
-    klantid = str(klantID)
-    sql = "UPDATE gebruikers SET pincode = '%s' WHERE klantid = '%s'" % (pincode, klantid)
-    data = pushData(sql)
-
-def getGeblokkeerd():
-    global tagID
-    tag = str(tagID)
-    sql = "SELECT geblokkeerd FROM gebruikers WHERE tagID = '%s'" % tag
-    data = fetchData(sql)
-    return data
-
-def getPogingen():
-    global tagID
-    tag = str(tagID)
-    sql = "SELECT pogingen FROM gebruikers WHERE tagID = '%s'" % tag
-    data = fetchData(sql)
-    return data
-
-def setPogingen(poging): #Zet de pogingen hoger als de pincode fout ingetoetst is
-    global tagID
-    tag = str(tagID)
-    poging = str(poging)
-    sql = "UPDATE gebruikers SET pogingen = '%s' WHERE tagID = '%s'" % (poging, tagID)
-    pushData(sql)
-
-def getKlantid():   #Selecteert klantid van de gebruikers
-    global klantID
-    global pincode
-    global tagID
-    pincode = str(pincode)
-    tag = str(tagID)
-    sql = "SELECT klantid FROM gebruikers WHERE pincode = '%s' AND tagID = '%s'" % (pincode, tag)
-    data = fetchData(sql)
-    return data
-
-def getNaam():      #Selecteert de naam van de gebruiker
-    global klantID
-    klantid = str(klantID)
-    sql = "SELECT naam FROM gebruikers WHERE klantid = '%s'" % klantid
-    naam = fetchData(sql)
-    return naam
-
-def getRekening():  #Selecteert de rekeningen van de gebruiker
-    global klantID
-    klantid = str(klantID)
-    sql = "SELECT rekeningnr FROM rekeningen WHERE klantid = '%s'" % klantid
-    data = fetchData(sql)
-    return data
-
-def blokkeer(): #Checkt of de gebruiker geblokkeerd is
-    global tagID
-    tag = str(tagID)
-    sql = "UPDATE gebruikers SET geblokkeerd = 'ja' WHERE tagID = '%s'" % tagID
-    pushData(sql)
-
-def getSaldo():   #Geeft het saldo van één rekeningnummer
-    global klantID
-    klantid = str(klantID)
-    sql = "SELECT saldo FROM rekeningen WHERE klantid = '%s'" % klantid
-    saldo = fetchData(sql)
-    return saldo
-
-def opnemen(rekeningnr, saldo):
-    rekeningnr = str(rekeningnr)
-    saldo = str(saldo)
-    sql = "UPDATE rekeningen SET saldo = '%s' WHERE rekeningnr = '%s'" % (saldo, rekeningnr)
-    pushData(sql)
-    sql = "SELECT saldo FROM rekeningen WHERE rekeningnr = '%s'" % rekeningnr
-    data = fetchData(sql)
-    return data
-    
 def manageData(data):
     result = []
     global rows
@@ -208,6 +135,99 @@ def manageData(data):
     except IndexError:
         print("Error geen data gevonden")
 
+def selectPincode():
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT pincode FROM users WHERE card_uid = '%s'" % tag
+    data = fetchData(sql)
+    return data
+
+def setPincode(pincode):
+    global tagID
+    pincode = str(pincode)
+    tag = str(tagID)
+    sql = "UPDATE users SET pincode = '%s' WHERE card_uid = %s" % (pincode, tag)
+    data = pushData(sql)
+
+def getPogingen():
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT tries FROM users WHERE card_uid = '%s'" % tag
+    data = fetchData(sql)
+    return data
+
+def setPogingen(poging): #Zet de pogingen hoger als de pincode fout ingetoetst is
+    global tagID
+    tag = str(tagID)
+    poging = int(poging)
+    sql = "UPDATE users SET blocked = %s WHERE card_uid = '%s'" % (poging, tagID)
+    pushData(sql)
+
+def getCardid():   #Selecteert de cardUID van de gebruikers
+    global pincode
+    global tagID
+    pincode = str(pincode)
+    tag = str(tagID)
+    sql = "SELECT card_uid FROM users WHERE pincode = '%s' AND card_uid = '%s'" % (pincode, tag)
+    data = fetchData(sql)
+    return data
+
+def getNaam():      #Selecteert de naam van de gebruiker
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT name FROM users WHERE card_uid = '%s'" % tag
+    naam = fetchData(sql)
+    return naam
+
+def getRekening():  #Selecteert de rekeningen van de gebruiker
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT account_number FROM users WHERE card_uid = '%s'" % tag
+    data = fetchData(sql)
+    return data
+
+def selectRekening(rekeningnummer): #Selecteerd een rekening om geld naar over te maken(en kijkt of de rekening bestaat)
+    rekeningnummer = int(rekeningnummer)
+    sql = "SELECT account_number FROM users WHERE account_number = '%s'" % rekeningnummer
+    data = fetchData(sql)
+    return data
+
+def getSaldo():   #Geeft het saldo van één rekeningnummer
+    global tagID
+    tag = str(tagID)
+    sql = "SELECT balance FROM users WHERE card_uid = '%s'" % tag
+    saldo = fetchData(sql)
+    return saldo
+
+def update_saldo(rekeningnr, saldo):
+    rekeningnr = rekeningnr.decode("utf-8")
+    rekeningnr = str(rekeningnr)
+    saldo = int(saldo)
+    sql = "UPDATE users SET balance = %s WHERE account_number = '%s'" % (saldo, rekeningnr)
+    pushData(sql)
+    sql = "SELECT balance FROM users WHERE account_number = '%s'" % rekeningnr
+    data = fetchData(sql)
+    return data
+
+def stort_geld(rekeningnr, bedrag):
+    bedrag = float(bedrag)
+    rekeningnr = str(rekeningnr)
+    sql = "SELECT balance FROM users WHERE account_number = '%s'" % rekeningnr
+    data = fetchData(sql)
+    saldo = float(manageData(data))
+    saldo += bedrag
+    print("Nieuw bedrag: "+saldo)
+    update_saldo(rekeningnr, saldo)
+
+def insert_log(message):
+    global tagID
+    tag = str(tagID)
+    message = str(message)
+    sql = "INSERT INTO log (action, card_uid) VALUES ('%s','%s')" % (tag, message)
+    
+    
+    
+
 """END DATABASE FUNCTIONS"""
 
 """PYTHON->ARDUINO FUNCTIONS"""
@@ -217,6 +237,7 @@ def arrayReset():
     global digitArray
     global count
     global volgende
+    volgende = False
     count = 0
     digitArray = []
 
@@ -239,6 +260,7 @@ def idFound(ID):
     global tagID
     global count
     global alive
+    ID = ID.replace(" ", "")
     if tagID == "":
         tagID = ID
     elif tagID == ID:
@@ -254,6 +276,19 @@ def idFound(ID):
             print("Found other ID")
             print("Saved ID: " + tagID)
             print("Found ID: " + ID)
+
+
+
+#Zorgt ervoor dat tags met dezelfde id niet meer kunnen inloggen
+def clearID(TAG):
+    while True:
+        raw = ser.readline()
+        result = raw.strip().decode("utf-8")
+        if len(result) == 11:
+            if result == TAG:
+                print(result)
+            else:
+                break;
 
 
 #Elke key die de keypad stuurt gaat door deze functie
@@ -277,6 +312,8 @@ def keyFound(key):
              keyB = True
         elif(key == 'C'):
              keyC = True
+        elif(key == 'D'):
+             keyD = True
         else:
             digitArray.append(key)
 
@@ -311,7 +348,18 @@ def readThread():
 """GUI FUNCTIONS"""
 
 #Brengt de GUI terug naar het inlogscherm en reset de gegevens
+def log_uit():
+    global tagID
+    global pincode
+    tagID = ""
+    pincode = ""
+    arrayReset()
+    inlog_scherm()
+
+
 def quit_app():
+    global tagID
+    tagID = ""
     inlog_scherm()
     arrayReset()
 
@@ -361,6 +409,15 @@ def text(x,y,message, size, color):
 def foutmelding(message):
     draw_border(50,100,700,400,black,2)
     pygame.draw.rect(display, red, (50,100,700,400))
+    TextSurf, TextRect = text_objects(message, smallText, black)
+    TextRect.center = (400,300)
+    display.blit(TextSurf, TextRect)
+    pygame.display.update()
+    time.sleep(3)
+
+def succesmelding(message):
+    draw_border(50,100,700,400,black,2)
+    pygame.draw.rect(display, green, (50,100,700,400))
     TextSurf, TextRect = text_objects(message, smallText, black)
     TextRect.center = (400,300)
     display.blit(TextSurf, TextRect)
@@ -424,7 +481,6 @@ def inlog_scherm():
     global tagID
     global pincode
     global busy
-    global klantID
     global pogingen
     ingelogd = False
     tagID = ""
@@ -452,42 +508,42 @@ def inlog_scherm():
             TextRect2.center = ((display_width/2), (display_height/2+40))
             display.blit(TextSurf2, TextRect2)
             text(400,500,"Inloggen: '#' | Correctie: '*'", smallText, black)
-            geblokkeerd = getGeblokkeerd()
+            geblokkeerd = getPogingen()
             geblokkeerd = manageData(geblokkeerd)
             geblokkeerd = geblokkeerd[0]
-            geblokkeerd = geblokkeerd.decode("utf-8")
-            if geblokkeerd == "ja":
+            geblokkeerd = int(geblokkeerd)
+            if geblokkeerd >= 3:
                 foutmelding("Deze pas is geblokkeerd, u kunt geen geld uitnemen")
-            pogingen = getPogingen()
-            pogingen = manageData(pogingen)
-            pogingen = pogingen[0]
-            pogingen = pogingen.decode("utf-8")
+                clearID(tagID)
+                log_uit()
                 
 
-        if not busy:    #Als er niet serieel wordt uitgelezen wordt dit programma gelijk weer opgestart
+        if not busy:                                 #Als er niet serieel wordt uitgelezen wordt dit programma gelijk weer opgestart
             t1 = threading.Thread(target=readThread) #Dit wordt gedaan in een sidethread zodat deze loop gewoon door kan gaan
             t1.start()
 
-        if pincode != "":   #Zodra er een pincode is ingevoerd wordt deze functie opgeroepen
-            klant = getKlantid()
-            klant = manageData(klant)   #Dit geeft een kaal getal terug (Bijvoorbeeld 5) dit is dan het klantid
+        if pincode != "":               #Zodra er een pincode is ingevoerd wordt deze functie opgeroepen
+            klant = getCardid()
+            klant = manageData(klant)   #Dit geeft een card UID terug. Om te checken of deze in de database staat
             try:
-                klantID = klant[0]
-                print("KlantID gevonden: " + klantID)
+                klantGevonden = klant[0]
+                klantGevonden = str(klantGevonden)
+                print("cardUID gevonden: " + klantGevonden)
                 pincode = ""
             except IndexError:          #Wanneer er geen id gevonden is betekend dit dat er geen bestaat en/of dat de pincode fout is
                 ingelogd = False
-                klantID = ""
-                print("Geen klantID gevonden")
+                klantGevonden = ""
+                print("Geen klant gevonden")
+                pogingen = getPogingen()
+                pogingen = manageData(pogingen)
+                pogingen = pogingen[0]
+                print(pogingen)
                 pogingen = int(pogingen)
                 pogingen += 1
                 pincode = ""
-                if pogingen >= 3:       #Na drie keer wordt de pas geblokkeerd
-                    blokkeer()
-                else:
-                    print("Setting pogingen to: "+str(pogingen)) #Bij een foute pincode wordt meteen een poging opgeslagen zodat er
-                    setPogingen(str(pogingen))                   #niet onbeperkt geprobeerd kan worden
-            if klantID != "":
+                print("Setting pogingen to: "+str(pogingen)) #Bij een foute pincode wordt meteen een poging opgeslagen zodat er
+                setPogingen(str(pogingen))                   #niet onbeperkt geprobeerd kan worden
+            if klantGevonden != "":
                 ingelogd = True
                 setPogingen("0")
                 pincode = ""
@@ -542,7 +598,7 @@ def kies_rekening():
 #Dit is het keuzemenu, hier worden de gegevens aan je laten zien, je saldo weergegeven en
 #je kan een keuze maken of je je pincode wil aanpassen of geld wil opnemen
 def keuze_scherm():
-    global keyA, keyB, keyC, keuze
+    global keyA, keyB, keyC, keyD, keuze
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -565,10 +621,11 @@ def keuze_scherm():
         text(475,125,"Saldo:", smallText, black)
         data_entry(575, 200, "saldo",keuze,largeText, black)#Het meegegeven keyword saldo zorgt ervoor dat de juiste gegevens worden opgehaald
         
-
-        draw_border(125,400,175,100, black, 2)      #Dit zijn de randen om de knoppen heen
-        draw_border(450, 400, 275, 100, black, 2)
-        draw_border(300,525,150,60,black, 2)
+        #Dit zijn de randen om de knoppen heen
+        draw_border(125,375,175,60, black, 2)              #Opnemen
+        draw_border(450, 400, 275, 100, black, 2)           #Verander pincode
+        draw_border(137,215,150,60,black, 2)                #Stoppen
+        draw_border(125, 465, 175, 60, black, 2)           #Overmaken
 
         if not busy:
             t1 = threading.Thread(target=readThread)
@@ -579,21 +636,26 @@ def keuze_scherm():
              geld_opnemen()
         elif keyB:
              keyB = False
-             pincode_aanpassen()
+             geld_overmaken()
         elif keyC:
              keyC = False
              quit_app()
+        elif keyD:
+             keyD = False
+             pincode_aanpassen()
 
         #Alle knoppen zijn zowel klikbaar met de muis als met de keypad
-        button("Opnemen", 125, 400, 175, 100, green_dark, green, geld_opnemen)
-        text(285,415,"A", smallText, black)
+        button("Opnemen", 125, 375, 175, 60, green_dark, green, geld_opnemen)
+        text(290,390,"A", smallText, black)
+
+        button("Overmaken", 125, 465, 175, 60, green_dark, green, geld_overmaken)
+        text(290,480,"B", smallText, black)
         
         button("Verander pincode", 450, 400, 275, 100, red_dark, red, pincode_aanpassen)
-        text(715,415,"B", smallText, black)
+        text(715,415,"D", smallText, black)
 
-        button("Stoppen",300,525,150,60,red_dark,red,quit_app)
-        text(440,540,"C",smallText,black)
-        
+        button("Stoppen",137,215,150,60,red_dark,red,quit_app)
+        text(275,230,"C",smallText,black)
         
         pygame.display.update()
         clock.tick(15)
@@ -602,6 +664,7 @@ def keuze_scherm():
 #Met het invoeren van een getal wordt het gelijk van de rekening gehaald
 def geld_opnemen():
     global busy, keyA, keyB, keyC, pincode, keuze
+    insert_log("Keuze: Geld opnemen")
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -647,20 +710,21 @@ def geld_opnemen():
 
             #saldo wordt opgehaald en omgerekend naar een integer
             saldo = getSaldo()
-            saldo = saldo[rekening][0][0].decode("utf-8")
+            saldo = saldo[rekening][0][0]
+            #.decode("utf-8")
             saldo = int(saldo)
             #Dezei if statement kijkt of je genoeg op je rekening hebt voor een geldopname
             if saldo <= 0 or saldo-bedrag < 0:
                 print("Te weinig saldo!")
                 foutmelding("Te weinig saldo!")
-                time.sleep(3)
                 keuze_scherm()
 
             #Zo ja dan wordt je nieuwe saldo berekend en verwerkt in de database
             saldo -= bedrag
             saldo = str(saldo)
             print("Nieuw saldo: "+saldo)
-            opnemen(rekeningnr[rekening], saldo)
+            update_saldo(rekeningnr[rekening], saldo)
+            succesmelding("Geld opgenomen, nieuw saldo: "+saldo)
             keuze_scherm()
 
         button("Opnemen", 150, 500, 170, 50, green_dark, green, None)
@@ -675,6 +739,104 @@ def geld_opnemen():
         pygame.display.update()
         clock.tick(15)
 
+#Functie om geld te versturen tussen rekeningen
+def geld_overmaken():
+    global busy, keyA, keyB, keyC, pincode, keuze, volgende
+    volgende = False
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit_app()
+        
+        display.fill(white)
+        TextSurf, TextRect = text_objects("Kiwi Banking", largeText, black)
+        TextRect.center = ((display_width/2), (display_height/2-250))
+        display.blit(TextSurf, TextRect)
+
+        text((display_width/2),(display_height/2-35),"Volgende: '#', Correctie: '*'", verysmallText, black)
+       
+        draw_border(150, 300, 500, 75, black, 2)
+        pygame.draw.rect(display, white, (150, 300, 500, 75))
+        pygame.draw.rect(display, white, ((display_width/2-100),(display_height/2-20),200,30))      #Onderste inputbox
+        text((display_width/2),(display_height/2),"Voer bedrag in", smallText, black)
+
+        draw_border(150, 150, 500, 75, black, 2)                                                    #Bovenste inputbox
+        pygame.draw.rect(display, white, (150, 150, 500, 75))
+        pygame.draw.rect(display, white, ((display_width/2-163),(display_height/2-165),326,30))
+        text((display_width/2),(display_height/2-150),"Voer rekeningnummer in", smallText, black)
+
+        if not busy:
+            t1 = threading.Thread(target=readThread)
+            t1.start()
+
+        elif keyB:
+            keyB = False
+            keuze_scherm()
+        elif keyC:
+            keyC = False
+            quit_app()
+
+        """##############################"""
+        if pincode != "":
+            if volgende:
+                bedrag = int(pincode)
+                pincode = ""
+                print (bedrag)
+                if keuze == 1:
+                    rekening = 0
+                else:
+                    rekening = 1
+                saldo = getSaldo()
+                saldo = saldo[rekening][0][0].decode("utf-8")
+                saldo = int(saldo)
+                if saldo <= 0 or saldo-bedrag < 0:
+                    print("Te weinig saldo!")
+                    foutmelding("Te weinig saldo!")
+                    volgende = False
+                    geld_overmaken()
+                else:
+                    saldo -= bedrag
+                    saldo = str(saldo)
+                    print("Nieuw saldo: "+saldo)
+                    update_saldo(rekeningnr[rekening], saldo)
+                    succesmelding("Geld overgemaakt, nieuw saldo: "+saldo)
+                    #Geld bijschrijven bij rekening!
+                    stort_geld(rekeningnummer, bedrag)
+                    time.sleep(3)
+                    keuze_scherm()
+            else:
+                volgende = True
+                rekeningnummer = int(pincode)
+                pincode = ""
+                print (rekeningnummer)
+                rekeningnummer = selectRekening(rekeningnummer)
+                rekeningnummer = manageData(rekeningnr)
+                if rekeningnummer == "":
+                    foutmelding("Ongeldig rekeningnummer")
+                    volgende = False
+                    geld_overmaken()
+        if volgende:
+            TextSurf3, TextRect3 = text_objects(input_state(), largeText, black)
+            TextRect3.center = ((display_width/2), (display_height/2+50))
+            display.blit(TextSurf3, TextRect3)
+        else:
+            TextSurf2, TextRect2 = text_objects(input_state(), largeText, black)
+            TextRect2.center = ((display_width/2), (display_height/2-100))
+            display.blit(TextSurf2, TextRect2)
+            
+        """##############################"""
+
+        button("Overmaken", 150, 500, 170, 50, green_dark, green, None)
+        text(310,510,"#", verysmallText, black)
+
+        button("Terug", 335, 500, 150, 50,red_dark, red, keuze_scherm)
+        text(475,510,"B", verysmallText, black)
+        
+        button("Stoppen", 500, 500, 150, 50, red_dark, red, quit_app)
+        text(640,510,"C", verysmallText, black)
+        
+        pygame.display.update()
+        clock.tick(15)
 
 #Functie om je pincode aan te passen
 def pincode_aanpassen():
